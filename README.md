@@ -1,6 +1,15 @@
 # Overview
 Visualisation codes for Xenium datasets
 
+# Preparing the kernel
+Install conda environemnt using yaml file:
+`conda env create -f environment.yml`
+Activate environment:
+`conda activate xenium_vistools`
+Add Jupyter kernel from this environment:
+`python -m ipykernel install --user --name xenium_vistools`
+When startin Jupyter Notebook choose kernel "xenium_vistools"
+
 ## Visualisation of single cells
 This code allows visualisation of *N* random cells which will pass some criteria. It can be cell area, number of transcripts, cell type etc. Basically anything, what sits (or can be added) to `adata.obs`. Each cell image contains crop with DAPI image, cell label polygon and transcripts (please note at the moment I only select top 5 gene types in all regions, or list of!) For an example check **visualise_cells_example.ipynb**
 **plot_cells_by_par** function has next inputs (*mandatory inputs):

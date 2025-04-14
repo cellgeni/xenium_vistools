@@ -3,15 +3,22 @@ Visualisation codes for Xenium datasets
 
 # Preparing the kernel
 Install conda environemnt using yaml file:
+
 `conda env create -f environment.yml`
+
 Activate environment:
+
 `conda activate xenium_vistools`
+
 Add Jupyter kernel from this environment:
+
 `python -m ipykernel install --user --name xenium_vistools`
+
 When startin Jupyter Notebook choose kernel "xenium_vistools"
 
 ## Visualisation of single cells
-This code allows visualisation of *N* random cells which will pass some criteria. It can be cell area, number of transcripts, cell type etc. Basically anything, what sits (or can be added) to `adata.obs`. Each cell image contains crop with DAPI image, cell label polygon and transcripts (please note at the moment I only select top 5 gene types in all regions, or list of!) For an example check **visualise_cells_example.ipynb**
+This code allows visualisation of *N* random cells which will pass some criteria. It can be cell area, number of transcripts, cell type etc. Basically anything, what sits (or can be added) to `adata.obs`. Each cell image contains crop with DAPI image, cell label polygon and transcripts (please note at the moment I only select top 5 gene types in all regions, or list of the genes!) For an example check **visualise_cells_example.ipynb**
+
 **plot_cells_by_par** function has next inputs (*mandatory inputs):
  - sdata*: spatial data object
  - n_hor*: number of columns
@@ -31,6 +38,7 @@ This code allows visualisation of *N* random cells which will pass some criteria
 
 ## Radial distribution of genes/cell types
 This code can visualise a distribution as a function of angle and distance from the reference point. This can be either gene distribution or distribtuion of any other (categorical) entity from 'adata.obs'. For an example check **example_spatial_distribution.ipynb**
+
 **plot_spatial_distribution** function has next inputs (*mandatory inputs):
  - adata*: AnnData object
  - ref_point*: either list or numpy array with 2 numbers - x,y position of the reference point 

@@ -37,7 +37,7 @@ This code allows visualisation of *N* random cells which will pass some criteria
  - display_genes: list of teh gene names to be shown (for transcripts). If the list is empty (default option) shows top5 genes present in all selected FOVs
 
 ## Radial distribution of genes/cell types
-This code can visualise a distribution as a function of angle and distance from the reference point. This can be either gene distribution or distribtuion of any other (categorical) entity from 'adata.obs'. For an example check **example_spatial_distribution.ipynb**
+This code can visualise a distribution as a function of angle and distance from the reference point. This can be either gene distribution or distribtuion of any other (categorical) entity from `adata.obs`. For an example check **example_spatial_distribution.ipynb**
 
 **plot_spatial_distribution** function has next inputs (*mandatory inputs):
  - adata*: AnnData object
@@ -60,6 +60,11 @@ This code allows you to open sample scheme (defined by positions of cells), draw
  - picked_points*: tuple with 3 points position - output of **pick_line_and_reference**
  - column_name: name of `adata.obs` column to be used(default value: "group")
  - selected_groups/selected_genes: list of values from column in `adata.obs` / list of gene names. In case of empty selected_groups - function will plot histogram with all categories from `adata.obs` column
- - 
+ - xboundaries: tuple with min and max limits for distribution distance
+ - bins: total number of bins (default: 30)
+ - color: color of the histogram (default: "blue")
+ - units: units in which position and distance are defined (default: "pixels")
+ - grid: boolean, whether to display grid or not (default: True)
+ - save_folder: folder for images to be saved
 
 

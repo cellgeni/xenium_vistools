@@ -50,3 +50,16 @@ This code can visualise a distribution as a function of angle and distance from 
  - gene_list: list of teh genes which distributions you want to plot
  - obs_sets: sets of columns and values to be plotted in the format: `obs_sets = [['column1', ['col1_val1', 'col1_val2']], ['column2', ['col2_val1', 'col2_val2']]]`
  - colormap: colormap for the heatmap histogram distribution
+
+## Histogram distribution across manually drawn line
+
+This code allows you to open sample scheme (defined by positions of cells), draw line across the sample, and set a reference point. Then user can plot either cell type/annotation (any `adata.obs` categorical column) or gene expression distribution histogram along the defined line. For example check **example_histogram_custom_line.ipynb**.
+
+**plot_group_distribution_along_line** and **plot_gene_expression_along_line** have next inputs (*mandatory inputs):
+ - adata*: AnnData object
+ - picked_points*: tuple with 3 points position - output of **pick_line_and_reference**
+ - column_name: name of `adata.obs` column to be used(default value: "group")
+ - selected_groups/selected_genes: list of values from column in `adata.obs` / list of gene names. In case of empty selected_groups - function will plot histogram with all categories from `adata.obs` column
+ - 
+
+

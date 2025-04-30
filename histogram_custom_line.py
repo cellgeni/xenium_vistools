@@ -63,7 +63,7 @@ def pick_line_and_reference(adata, save=None, callback=None):
     cid = fig.canvas.mpl_connect('button_press_event', onclick)
     #display(fig)
 
-def plot_group_distribution_along_line(adata, picked_points, xboundaries = (None, None), selected_groups = [None], bins=30, column_name='group', color = None, units = 'pixels', grid = True, save_folder = None):
+def plot_group_distribution_along_line(adata, picked_points, xboundaries = (None, None), selected_groups = None, bins=30, column_name='group', color = None, units = 'pixels', grid = True, save_folder = None):
     """
     Plot distribution of group categories along the picked line.
 
@@ -134,10 +134,10 @@ def plot_group_distribution_along_line(adata, picked_points, xboundaries = (None
                 path = os.path.join(save_folder, f"{selected_group}_distribution.png")
                 plt.savefig(path, dpi=300)
     else:
-        plt.figure(figsize=(10, 6))
-        groups = df['group'].unique()
+        plt.figure(figsize=(12, 12))
+        groups = df[column_name].unique()
         for group in groups:
-            subset = df[df['group'] == group]
+            subset = df[df[column_name] == group]
             plt.hist(
                 subset['distance_along_line'],
                 bins=bins,

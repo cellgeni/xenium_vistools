@@ -151,8 +151,8 @@ def polar_density_plot(data_angles_list, data_distances_list, labels=None,
         #ax.set_theta_direction(1)
         ax.set_title("Polar Density Plot (Multiple Histograms)")
         ax.legend(loc='upper right')
-        plt.show()
-    
+        
+    plt.show()
     if save:
         plt.savefig(save, dpi = 300)
 
@@ -294,7 +294,8 @@ def get_positions_from_obs_column(adata, column_name, value):
     return spatial_data
 
 def plot_spatial_distribution(adata, ref_point, sample_name = None, save_folder = None, angle_bin_size = np.pi/4, distance_bin_size = 5000, 
-                              distance_max = None, gene_list = [], obs_sets = [], colormap = 'Purples', multiple_histograms = False):
+                              distance_max = None, gene_list = [], obs_sets = [], colormap = 'Purples', multiple_histograms = False,
+                              group_together = False):
     ## structure of obs sets: [['column1', ['col1_val1', 'col1_val2']], ['column2', ['col2_val1', 'col2_val2']]]
 
     #make sure we have adata.obsm['spatial']
@@ -302,35 +303,48 @@ def plot_spatial_distribution(adata, ref_point, sample_name = None, save_folder 
         adata.obsm['spatial'] = adata.obsm['X_spatial']
     
     ## lets plot genes if there are any in the list
-    
-    if not multiple_histograms:
-    #one plot per gene
-        for gene in gene_list:
-            print(gene)
-            hist, angle_bins, distance_bins = gene_expression_distribution(adata, gene, ref_point,  angle_bin_size, distance_bin_size, distance_max)
-            if sample_name: 
-                plot_title = sample_name + ' -- ' + str(gene)
-            else:
-                plot_title = str(gene)
-            if save_folder:
-                save_path = os.path.join(save_folder, plot_title + '.png')
-                polar_density_plot_hist(hist, angle_bins=angle_bins, distance_bins=distance_bins, labels=plot_title, save = save_path, colormap = colormap)
-            else:
-                polar_density_plot_hist(hist, angle_bins=angle_bins, distance_bins=distance_bins, labels=plot_title, colormap = colormap)
-    else:
-        #plot all genes histograms in one plot
-        hist_list = []
-        for gene in gene_list:
-            print(gene)
-            hist, angle_bins, distance_bins = gene_expression_distribution(adata, gene, ref_point,  angle_bin_size, distance_bin_size, distance_max)
-            hist_list.append(hist)
-
-        
-        if save_folder:
-            save_path = os.path.join(save_folder, 'genes.png')
-            polar_density_plot_hist(hist_list, angle_bins=angle_bins, distance_bins=distance_bins, labels=gene_list, save = save_path)
+    if gene_list:
+        if not multiple_histograms:
+        #one plot per gene
+            for gene in gene_list:
+                print(gene)
+                hist, angle_bins, distance_bins = gene_expression_distribution(adata, gene, ref_point,  angle_bin_size, distance_bin_size, distance_max)
+                if sample_name: 
+                    plot_title = sample_name + ' -- ' + str(gene)
+                else:
+                    plot_title = str(gene)
+                if save_folder:
+                    save_path = os.path.join(save_folder, plot_title + '.png')
+                    polar_density_plot_hist(hist, angle_bins=angle_bins, distance_bins=distance_bins, labels=plot_title, save = save_path, colormap = colormap)
+                else:
+                    polar_density_plot_hist(hist, angle_bins=angle_bins, distance_bins=distance_bins, labels=plot_title, colormap = colormap)
         else:
-            polar_density_plot_hist(hist_list, angle_bins=angle_bins, distance_bins=distance_bins, labels=gene_list)
+            #plot all genes histograms in one plot
+            hist_list = [];
+            for gene in gene_list:
+                    print(gene)
+                    hist, angle_bins, distance_bins = gene_expression_distribution(adata, gene, ref_point,  angle_bin_size, distance_bin_size, distance_max)
+                    hist_list.append(hist)
+
+            if not group_together:
+            #we plot them all with different colors
+                if save_folder:
+                    save_path = os.path.join(save_folder, 'genes.png')
+                    polar_density_plot_hist(hist_list, angle_bins=angle_bins, distance_bins=distance_bins, labels=gene_list, save = save_path)
+                else:
+                    polar_density_plot_hist(hist_list, angle_bins=angle_bins, distance_bins=distance_bins, labels=gene_list)
+            else:
+            #we group them together
+                hist_sum = np.mean(hist_list, axis=0)
+                plot_title = "grouped genes " + "_".join(gene_list)
+                if save_folder:
+                    save_path = os.path.join(save_folder, plot_title + '.png')
+                    polar_density_plot_hist(hist_sum, angle_bins=angle_bins, distance_bins=distance_bins, labels=plot_title, save = save_path, colormap = colormap)
+                else:
+                    polar_density_plot_hist(hist_sum, angle_bins=angle_bins, distance_bins=distance_bins, labels=plot_title, colormap = colormap)
+
+            
+            
 
     ## lets plot any adata.obs columns
     if obs_sets:
@@ -360,12 +374,23 @@ def plot_spatial_distribution(adata, ref_point, sample_name = None, save_folder 
                     angles_list.append(angles)
                     distances_list.append(distances)
                     values_list.append(value)
-                if save_folder:
-                    save_path = os.path.join(save_folder, column_name + '.png')
-                    polar_density_plot(angles_list, distances_list, angle_bin_size=angle_bin_size, distance_bin_size=distance_bin_size, labels=values_list, save = save_path, distance_max = distance_max)
+                if not group_together:
+                #we plot them all with different colors
+                    if save_folder:
+                        save_path = os.path.join(save_folder, column_name + '.png')
+                        polar_density_plot(angles_list, distances_list, angle_bin_size=angle_bin_size, distance_bin_size=distance_bin_size, labels=values_list, save = save_path, distance_max = distance_max)
+                    else:S
+                        polar_density_plot(angles_list, distances_list, angle_bin_size=angle_bin_size, distance_bin_size=distance_bin_size, labels=values_list, distance_max = distance_max)
                 else:
-                    polar_density_plot(angles_list, distances_list, angle_bin_size=angle_bin_size, distance_bin_size=distance_bin_size, labels=values_list, distance_max = distance_max)
-
+                #we group them together
+                    angles = np.concatenate(angles_list)
+                    distances = np.concatenate(distances_list)
+                    plot_title = "grouped " + column_name + "-" + "_".join(values_list)
+                    if save_folder:
+                        save_path = os.path.join(save_folder, plot_title + '.png')
+                        polar_density_plot(angles, distances, angle_bin_size=angle_bin_size, distance_bin_size=distance_bin_size, labels=plot_title, save = save_path, distance_max = distance_max, colormap = colormap)
+                    else:
+                        polar_density_plot(angles, distances, angle_bin_size=angle_bin_size, distance_bin_size=distance_bin_size, labels=plot_title, distance_max = distance_max, colormap = colormap)
 class InteractivePlot:
     def __init__(self, points, size = 1):
         self.fig, self.ax = plt.subplots()

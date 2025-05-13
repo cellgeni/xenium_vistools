@@ -63,7 +63,7 @@ def pick_line_and_reference(adata, save=None, callback=None):
     cid = fig.canvas.mpl_connect('button_press_event', onclick)
     #display(fig)
 
-def plot_group_distribution_along_line(adata, picked_points, xboundaries = (None, None), selected_groups = None, bins=30, column_name='group', color = None, units = 'pixels', grid = True, save_folder = None):
+def plot_group_distribution_along_line(adata, picked_points, xboundaries = (None, None), selected_groups = None, bins=30, column_name='group', color = None, units = 'pixels', grid = True, save_folder = None, plot_together = False):
     """
     Plot distribution of group categories along the picked line.
 
@@ -99,33 +99,63 @@ def plot_group_distribution_along_line(adata, picked_points, xboundaries = (None
     if selected_groups is not None:
         #plt.figure(figsize=(5*len(selected_groups), 6))
         #f, axs = plt.subplots(len(selected_groups),1, figsize=(5*len(selected_groups), 9))
-        for selected_group in selected_groups:
-            f, ax = plt.subplots(figsize=(8, 8))
-            subset = df[df[column_name] == selected_group]
-            if xboundaries == (None, None):
-                ax.hist(
-                    subset['distance_along_line'],
-                    bins=bins,
-                    alpha=0.8,
-                    label=str(selected_group),
-                    histtype='stepfilled',
-                    color = color,
-                )
+        
+            
+            if plot_together:
+                f, ax = plt.subplots(figsize=(8, 8))
+                cmap = plt.get_cmap("Set1")
+                for idx, selected_group in enumerate(selected_groups):
+                    subset = df[df[column_name] == selected_group]
+                    color_i = cmap(idx % cmap.N)
+                    hist_kwargs = {
+                        "bins": bins,
+                        "alpha": 1/len(selected_groups),
+                        "label": str(selected_group),
+                        "histtype": "stepfilled",
+                        "color": color_i
+                    }
+                    if xboundaries != (None, None):
+                        hist_kwargs["range"] = xboundaries
+                    ax.hist(subset["distance_along_line"], **hist_kwargs)
+
+                ax.set_title("Group distribution along the selected line")
+                ax.axvline(0, color="black", linestyle="--", label="Reference Point")
+                ax.set_xlabel("Distance along the line, " + str(units))
+                ax.set_ylabel("Number of cells")
+                ax.legend()
+                if grid:
+                    ax.grid(True)
+                if save_folder:
+                    path = os.path.join(save_folder, f"group_distribution_combined.png")
+                    plt.savefig(path, dpi=300)
             else:
-                ax.hist(
-                    subset['distance_along_line'],
-                    bins=bins,
-                    alpha=0.8,
-                    label=str(selected_group),
-                    histtype='stepfilled',
-                    color = color,
-                    range = xboundaries,
-                )
-            ax.set_title("Distribution of " + str(selected_group) + " along the selected line")
-            ax.axvline(0, color='black', linestyle='--', label='Reference Point')
-            ax.set_xlabel('Distance along the line, ' + str(units))
-            ax.set_ylabel('Number of cells')
-            ax.legend()
+                for selected_group in selected_groups:
+                    f, ax = plt.subplots(figsize=(8, 8))
+                    subset = df[df[column_name] == selected_group]
+                    if xboundaries == (None, None):
+                        ax.hist(
+                            subset['distance_along_line'],
+                            bins=bins,
+                            alpha=0.8,
+                            label=str(selected_group),
+                            histtype='stepfilled',
+                            color = color,
+                        )
+                    else:
+                        ax.hist(
+                            subset['distance_along_line'],
+                            bins=bins,
+                            alpha=0.8,
+                            label=str(selected_group),
+                            histtype='stepfilled',
+                            color = color,
+                            range = xboundaries,
+                        )
+                    ax.set_title("Distribution of " + str(selected_group) + " along the selected line")
+                    ax.axvline(0, color='black', linestyle='--', label='Reference Point')
+                    ax.set_xlabel('Distance along the line, ' + str(units))
+                    ax.set_ylabel('Number of cells')
+                    ax.legend()
             
             if grid:
                 ax.grid(True)
@@ -159,7 +189,7 @@ def plot_group_distribution_along_line(adata, picked_points, xboundaries = (None
     plt.show()
 
 
-def plot_gene_expression_along_line(adata, picked_points, xboundaries = (None, None), selected_genes = [None], bins=30, column_name='group', color = None, units = 'pixels', grid = True, save_folder = None):
+def plot_gene_expression_along_line(adata, picked_points, xboundaries = (None, None), selected_genes = [None], bins=30, column_name='group', color = None, units = 'pixels', grid = True, save_folder = None, plot_together = False):
     """
     Plot distribution of group categories along the picked line.
 
@@ -195,43 +225,75 @@ def plot_gene_expression_along_line(adata, picked_points, xboundaries = (None, N
     if selected_genes is not None:
         #plt.figure(figsize=(5*len(selected_groups), 6))
         #f, axs = plt.subplots(len(selected_groups),1, figsize=(5*len(selected_groups), 9))
-        for gene in selected_genes:
-            f, ax = plt.subplots(figsize=(8, 8))
-            gene_index = adata.var_names.get_loc(gene)
-            gene_expression = adata.X[:, gene_index].flatten() if issubclass(type(adata.X), np.ndarray) else adata.X[:, gene_index].toarray().flatten()
-            if xboundaries==(None, None):
-                ax.hist(
-                    df['distance_along_line'],
-                    bins=bins,
-                    alpha=0.8,
-                    label=str(gene),
-                    histtype='stepfilled',
-                    color = color,
-                    weights=gene_expression
-                )
-            else:
-                ax.hist(
-                    df['distance_along_line'],
-                    bins=bins,
-                    alpha=0.8,
-                    label=str(gene),
-                    histtype='stepfilled',
-                    color = color,
-                    range = xboundaries,
-                    weights=gene_expression
-                )
-            ax.set_title("Distribution of " + str(gene) + " expression along the selected line")
-            ax.axvline(0, color='black', linestyle='--', label='Reference Point')
-            ax.set_xlabel('Distance along the line, ' + str(units))
-            ax.set_ylabel('Gene expression')
+        
+        if plot_together:
+            fig, ax = plt.subplots(figsize=(10, 8))
+            cmap = plt.get_cmap("Set1")
+            for idx, gene in enumerate(selected_genes):
+                gene_index = adata.var_names.get_loc(gene)
+                gene_expression = adata.X[:, gene_index].flatten() if issubclass(type(adata.X), np.ndarray) else adata.X[:, gene_index].toarray().flatten()
+                color_i = cmap(idx % cmap.N)
+                hist_kwargs = {
+                    "bins": bins,
+                    "alpha": 1/len(selected_genes),
+                    "label": str(gene),
+                    "histtype": "stepfilled",
+                    "color": color_i,
+                    "weights": gene_expression
+                }
+                if xboundaries != (None, None):
+                    hist_kwargs["range"] = xboundaries
+                ax.hist(df["distance_along_line"], **hist_kwargs)
+
+            ax.set_title("Expression of selected genes along the line")
+            ax.axvline(0, color="black", linestyle="--", label="Reference Point")
+            ax.set_xlabel("Distance along the line, " + str(units))
+            ax.set_ylabel("Gene expression")
             ax.legend()
-            
             if grid:
                 ax.grid(True)
-
             if save_folder:
-                path = os.path.join(save_folder, f"{gene}_distribution.png")
+                path = os.path.join(save_folder, f"gene_expression_combined.png")
                 plt.savefig(path, dpi=300)
+        else:
+        
+            for gene in selected_genes:
+                f, ax = plt.subplots(figsize=(8, 8))
+                gene_index = adata.var_names.get_loc(gene)
+                gene_expression = adata.X[:, gene_index].flatten() if issubclass(type(adata.X), np.ndarray) else adata.X[:, gene_index].toarray().flatten()
+                if xboundaries==(None, None):
+                    ax.hist(
+                        df['distance_along_line'],
+                        bins=bins,
+                        alpha=0.8,
+                        label=str(gene),
+                        histtype='stepfilled',
+                        color = color,
+                        weights=gene_expression
+                    )
+                else:
+                    ax.hist(
+                        df['distance_along_line'],
+                        bins=bins,
+                        alpha=0.8,
+                        label=str(gene),
+                        histtype='stepfilled',
+                        color = color,
+                        range = xboundaries,
+                        weights=gene_expression
+                    )
+                ax.set_title("Distribution of " + str(gene) + " expression along the selected line")
+                ax.axvline(0, color='black', linestyle='--', label='Reference Point')
+                ax.set_xlabel('Distance along the line, ' + str(units))
+                ax.set_ylabel('Gene expression')
+                ax.legend()
+                
+                if grid:
+                    ax.grid(True)
+
+                if save_folder:
+                    path = os.path.join(save_folder, f"{gene}_distribution.png")
+                    plt.savefig(path, dpi=300)
     else:
         print('No genes has been chosen to display!')
         

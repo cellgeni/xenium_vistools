@@ -6,7 +6,8 @@ import matplotlib.pyplot as plt
 import os
 
 def polar_density_plot_hist(hist_list, labels, angle_bins, distance_bins,
-                                 colormap='Set1', save = None, distance_max = None):
+                                 colormap='Set1', save = None, distance_max = None,
+                                 angle_offset = None):
     """
     Plot multiple polar histograms of density along angle and distance.
 
@@ -32,6 +33,8 @@ def polar_density_plot_hist(hist_list, labels, angle_bins, distance_bins,
 
     # Prepare plot
     fig, ax = plt.subplots(subplot_kw={'projection': 'polar'}, figsize=(8, 8))
+    
+            
     if n_sets == 1:
         hist = hist_list[0]
         angle_bin_centers = (angle_bins[:-1] + angle_bins[1:]) / 2
@@ -40,9 +43,11 @@ def polar_density_plot_hist(hist_list, labels, angle_bins, distance_bins,
         norm = mpl.colors.Normalize(vmin=hist.min(), vmax=hist.max())
         for i in range(len(distance_bin_centers)):
             radii = hist[:, i]
+            distance_bin_size = distance_bins[1] - distance_bins[0]
             colors = cmap(norm(radii))  # Map the radii to colors
-            bars = ax.bar(angle_bin_centers, radii, width=(angle_bins[1] - angle_bins[0]), bottom=i*(distance_bins[1] - distance_bins[0]), color=colors, alpha=0.75)
-        ax.set_xticks(np.arange(0, 2.0 * np.pi, angle_bin_size))
+            bars = ax.bar(angle_bin_centers, distance_bin_size, width=angle_bin_size, bottom=i*(distance_bins[1] - distance_bins[0]), color=colors, alpha=1)
+        
+        
 
         ax.set_title(labels[0])
         # Create a colorbar
@@ -52,34 +57,56 @@ def polar_density_plot_hist(hist_list, labels, angle_bins, distance_bins,
         cbar.set_label('Density')
     else:
         print('multiple histograms')
-        colors = plt.get_cmap(colormap).colors  
+        colors = plt.get_cmap(colormap).colors 
         for i in range(n_sets):
-            
             label = labels[i] if labels else f"Hist {i+1}"
             hist = hist_list[i]
             distance_bin_size = distance_bins[1] - distance_bins[0]
-            # Plot each distance bin as a ring of bars
+            angle_bin_centers = (angle_bins[:-1] + angle_bins[1:]) / 2
+
+            # Create a colormap for this histogram (shades of a base color)
+            base_color = colors[i % len(colors)]
+            base_cmap = mpl.colors.LinearSegmentedColormap.from_list(
+                f"custom_cmap_{i}", ['white', base_color]
+            )
+            norm = mpl.colors.Normalize(vmin=hist.min(), vmax=hist.max())
+
             for j in range(hist.shape[1]):
                 radii = hist[:, j]
-                theta_centers = angle_bins[:-1] + angle_bin_size / 2
-                bar_width = angle_bin_size
+                bar_colors = base_cmap(norm(radii))
                 bottom = j * distance_bin_size
-                ax.bar(theta_centers, radii, width=bar_width, bottom=bottom,
-                    color=colors[i % len(colors)], alpha=1/n_sets, label=label if j == 0 else None)
+                ax.bar(angle_bin_centers, distance_bin_size, width=angle_bin_size, bottom=bottom,
+                color=bar_colors, alpha=0.5)
+                if j == 0:
+                    ax.bar(angle_bin_centers, [0]*len(angle_bin_centers), width=angle_bin_size,
+                    bottom=0, color=base_color, alpha=0.5, label=label)
 
         #ax.set_theta_zero_location('E')
         #ax.set_theta_direction(1)
         ax.set_title("Multiple gene expression distribution")
         ax.legend(loc='upper right')
-        plt.show()
+        
     
+    ax.set_xticks(np.arange(0, 2.0 * np.pi, angle_bin_size))
+
+    radial_ticks = distance_bins[:-1]
+    ax.set_yticks(radial_ticks)
+    ax.set_yticklabels([str(int(r)) for r in radial_ticks]) 
+    ax.set_ylim(0, distance_bins[-1]) 
+    if angle_offset:
+            ax.set_theta_offset(angle_offset)
+    ax.grid(True)
     if save:
         plt.savefig(save, dpi = 300)
+    plt.show()
+    
+    
 
 
 def polar_density_plot(data_angles_list, data_distances_list, labels=None,
                                  angle_bin_size=np.pi/12, distance_bin_size=1000,
-                                 colormap='Set1', save = None, distance_max = None):
+                                 colormap='Set1', save = None, distance_max = None,
+                                 angle_offset = None):
     """
     Plot multiple polar histograms of density along angle and distance.
 
@@ -115,13 +142,14 @@ def polar_density_plot(data_angles_list, data_distances_list, labels=None,
         distance_bins = np.arange(0, distance_max + distance_bin_size, distance_bin_size)
         angle_bin_centers = (angle_bins[:-1] + angle_bins[1:]) / 2
         distance_bin_centers = (distance_bins[:-1] + distance_bins[1:]) / 2
+        distance_bin_size = distance_bins[1] - distance_bins[0]
         cmap = plt.get_cmap(colormap)
         norm = mpl.colors.Normalize(vmin=hist.min(), vmax=hist.max())
         for i in range(len(distance_bin_centers)):
             radii = hist[:, i]
             colors = cmap(norm(radii))  # Map the radii to colors
-            bars = ax.bar(angle_bin_centers, radii, width=(angle_bins[1] - angle_bins[0]), bottom=i*(distance_bins[1] - distance_bins[0]), color=colors, alpha=0.75)
-        ax.set_xticks(np.arange(0, 2.0 * np.pi, angle_bin_size))
+            bars = ax.bar(angle_bin_centers, distance_bin_size, width=(angle_bins[1] - angle_bins[0]), bottom=i*(distance_bins[1] - distance_bins[0]), color=colors, alpha=1)
+        
 
         ax.set_title(labels[0])
         # Create a colorbar
@@ -129,34 +157,61 @@ def polar_density_plot(data_angles_list, data_distances_list, labels=None,
         sm.set_array([])
         cbar = plt.colorbar(sm, ax=ax, orientation='vertical', fraction=0.05, pad=0.05)
         cbar.set_label('Density')
+        
     else:
         colors = plt.get_cmap(colormap).colors  
+        
+
         for i in range(n_sets):
             angles = data_angles_list[i]
             distances = data_distances_list[i]
+            distance_bin_size = distance_bins[1] - distance_bins[0]
             label = labels[i] if labels else f"Hist {i+1}"
-
             hist, _, _ = np.histogram2d(angles, distances, bins=[angle_bins, distance_bins])
+            #preapring colormaps
+            base_color = colors[i % len(colors)]
+            base_cmap = mpl.colors.LinearSegmentedColormap.from_list(
+                f"custom_cmap_{i}", ['white', base_color]
+            )
+            norm = mpl.colors.Normalize(vmin=hist.min(), vmax=hist.max())
 
             # Plot each distance bin as a ring of bars
+            for j in range(hist.shape[1]):
+                radii = hist[:, j]
+                angle_bin_centers = angle_bins[:-1] + angle_bin_size / 2
+                bar_colors = base_cmap(norm(radii))
+                bottom = j * distance_bin_size
+                ax.bar(angle_bin_centers, distance_bin_size, width=angle_bin_size, bottom=bottom,
+                color=bar_colors, alpha=0.5)
+                if j == 0:
+                    ax.bar(angle_bin_centers, [0]*len(angle_bin_centers), width=angle_bin_size,
+                    bottom=0, color=base_color, alpha=0.5, label=label)
+                    
+            '''
             for j in range(hist.shape[1]):
                 radii = hist[:, j]
                 theta_centers = angle_bins[:-1] + angle_bin_size / 2
                 bar_width = angle_bin_size
                 bottom = j * distance_bin_size
-                ax.bar(theta_centers, radii, width=bar_width, bottom=bottom,
+                ax.bar(theta_centers, distance_bin_size, width=bar_width, bottom=bottom,
                     color=colors[i % len(colors)], alpha=1/n_sets, label=label if j == 0 else None)
-
+            '''
         #ax.set_theta_zero_location('E')
         #ax.set_theta_direction(1)
         ax.set_title("Polar Density Plot (Multiple Histograms)")
         ax.legend(loc='upper right')
-        
+    ax.set_xticks(np.arange(0, 2.0 * np.pi, angle_bin_size))
+    radial_ticks = distance_bins[:-1]
+    ax.set_yticks(radial_ticks)
+    ax.set_yticklabels([str(int(r)) for r in radial_ticks]) 
+    ax.set_ylim(0, distance_bins[-1]) 
+    if angle_offset:
+        ax.set_theta_offset(angle_offset)
     plt.show()
     if save:
         plt.savefig(save, dpi = 300)
 
-def polar_density_plot_hist_old(hist, angle_bins, distance_bins, title, save = None, colormap = 'Purples'):
+def polar_density_plot_hist_old(hist, angle_bins, distance_bins, title, save = None, colormap = 'Purples', offset_angle = None):
     """
     Create a polar histogram plot with color scale using precomputed histogram data.
     
@@ -194,7 +249,8 @@ def polar_density_plot_hist_old(hist, angle_bins, distance_bins, title, save = N
     sm.set_array([])
     cbar = plt.colorbar(sm, ax=ax, orientation='vertical', fraction=0.05, pad=0.05)
     cbar.set_label('Density')
-
+    
+    
     ax.set_title(title)
     plt.show()
     if save:
@@ -295,7 +351,7 @@ def get_positions_from_obs_column(adata, column_name, value):
 
 def plot_spatial_distribution(adata, ref_point, sample_name = None, save_folder = None, angle_bin_size = np.pi/4, distance_bin_size = 5000, 
                               distance_max = None, gene_list = [], obs_sets = [], colormap = 'Purples', multiple_histograms = False,
-                              group_together = False):
+                              group_together = False, angle_offset = None):
     ## structure of obs sets: [['column1', ['col1_val1', 'col1_val2']], ['column2', ['col2_val1', 'col2_val2']]]
 
     #make sure we have adata.obsm['spatial']
@@ -315,9 +371,9 @@ def plot_spatial_distribution(adata, ref_point, sample_name = None, save_folder 
                     plot_title = str(gene)
                 if save_folder:
                     save_path = os.path.join(save_folder, plot_title + '.png')
-                    polar_density_plot_hist(hist, angle_bins=angle_bins, distance_bins=distance_bins, labels=plot_title, save = save_path, colormap = colormap)
+                    polar_density_plot_hist(hist, angle_bins=angle_bins, distance_bins=distance_bins, labels=plot_title, save = save_path, colormap = colormap, angle_offset = angle_offset)
                 else:
-                    polar_density_plot_hist(hist, angle_bins=angle_bins, distance_bins=distance_bins, labels=plot_title, colormap = colormap)
+                    polar_density_plot_hist(hist, angle_bins=angle_bins, distance_bins=distance_bins, labels=plot_title, colormap = colormap, angle_offset = angle_offset)
         else:
             #plot all genes histograms in one plot
             hist_list = [];
@@ -330,18 +386,18 @@ def plot_spatial_distribution(adata, ref_point, sample_name = None, save_folder 
             #we plot them all with different colors
                 if save_folder:
                     save_path = os.path.join(save_folder, 'genes.png')
-                    polar_density_plot_hist(hist_list, angle_bins=angle_bins, distance_bins=distance_bins, labels=gene_list, save = save_path)
+                    polar_density_plot_hist(hist_list, angle_bins=angle_bins, distance_bins=distance_bins, labels=gene_list, save = save_path, angle_offset = angle_offset)
                 else:
-                    polar_density_plot_hist(hist_list, angle_bins=angle_bins, distance_bins=distance_bins, labels=gene_list)
+                    polar_density_plot_hist(hist_list, angle_bins=angle_bins, distance_bins=distance_bins, labels=gene_list, angle_offset = angle_offset)
             else:
             #we group them together
                 hist_sum = np.mean(hist_list, axis=0)
                 plot_title = "grouped genes " + "_".join(gene_list)
                 if save_folder:
                     save_path = os.path.join(save_folder, plot_title + '.png')
-                    polar_density_plot_hist(hist_sum, angle_bins=angle_bins, distance_bins=distance_bins, labels=plot_title, save = save_path, colormap = colormap)
+                    polar_density_plot_hist(hist_sum, angle_bins=angle_bins, distance_bins=distance_bins, labels=plot_title, save = save_path, colormap = colormap, angle_offset = angle_offset)
                 else:
-                    polar_density_plot_hist(hist_sum, angle_bins=angle_bins, distance_bins=distance_bins, labels=plot_title, colormap = colormap)
+                    polar_density_plot_hist(hist_sum, angle_bins=angle_bins, distance_bins=distance_bins, labels=plot_title, colormap = colormap, angle_offset = angle_offset)
 
             
             
@@ -362,9 +418,9 @@ def plot_spatial_distribution(adata, ref_point, sample_name = None, save_folder 
                     
                     if save_folder:
                         save_path = os.path.join(save_folder, plot_title + '.png')
-                        polar_density_plot(angles, distances, angle_bin_size=angle_bin_size, distance_bin_size=distance_bin_size, labels=plot_title, save = save_path, colormap = colormap, distance_max = distance_max)
+                        polar_density_plot(angles, distances, angle_bin_size=angle_bin_size, distance_bin_size=distance_bin_size, labels=plot_title, save = save_path, colormap = colormap, distance_max = distance_max, angle_offset = angle_offset)
                     else:
-                        polar_density_plot(angles, distances, angle_bin_size=angle_bin_size, distance_bin_size=distance_bin_size, labels=plot_title, colormap = colormap, distance_max = distance_max)
+                        polar_density_plot(angles, distances, angle_bin_size=angle_bin_size, distance_bin_size=distance_bin_size, labels=plot_title, colormap = colormap, distance_max = distance_max, angle_offset = angle_offset)
             else:
                 #plot all values histograms in one plot
                 angles_list = []; distances_list = []; values_list = []
@@ -378,9 +434,9 @@ def plot_spatial_distribution(adata, ref_point, sample_name = None, save_folder 
                 #we plot them all with different colors
                     if save_folder:
                         save_path = os.path.join(save_folder, column_name + '.png')
-                        polar_density_plot(angles_list, distances_list, angle_bin_size=angle_bin_size, distance_bin_size=distance_bin_size, labels=values_list, save = save_path, distance_max = distance_max)
-                    else:S
-                        polar_density_plot(angles_list, distances_list, angle_bin_size=angle_bin_size, distance_bin_size=distance_bin_size, labels=values_list, distance_max = distance_max)
+                        polar_density_plot(angles_list, distances_list, angle_bin_size=angle_bin_size, distance_bin_size=distance_bin_size, labels=values_list, save = save_path, distance_max = distance_max, angle_offset = angle_offset)
+                    else:
+                        polar_density_plot(angles_list, distances_list, angle_bin_size=angle_bin_size, distance_bin_size=distance_bin_size, labels=values_list, distance_max = distance_max, angle_offset = angle_offset)
                 else:
                 #we group them together
                     angles = np.concatenate(angles_list)
@@ -388,9 +444,9 @@ def plot_spatial_distribution(adata, ref_point, sample_name = None, save_folder 
                     plot_title = "grouped " + column_name + "-" + "_".join(values_list)
                     if save_folder:
                         save_path = os.path.join(save_folder, plot_title + '.png')
-                        polar_density_plot(angles, distances, angle_bin_size=angle_bin_size, distance_bin_size=distance_bin_size, labels=plot_title, save = save_path, distance_max = distance_max, colormap = colormap)
+                        polar_density_plot(angles, distances, angle_bin_size=angle_bin_size, distance_bin_size=distance_bin_size, labels=plot_title, save = save_path, distance_max = distance_max, colormap = colormap, angle_offset = angle_offset)
                     else:
-                        polar_density_plot(angles, distances, angle_bin_size=angle_bin_size, distance_bin_size=distance_bin_size, labels=plot_title, distance_max = distance_max, colormap = colormap)
+                        polar_density_plot(angles, distances, angle_bin_size=angle_bin_size, distance_bin_size=distance_bin_size, labels=plot_title, distance_max = distance_max, colormap = colormap, angle_offset = angle_offset)
 class InteractivePlot:
     def __init__(self, points, size = 1):
         self.fig, self.ax = plt.subplots()
